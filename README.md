@@ -11,7 +11,7 @@ Este CMS de **WordPress** montado a través de **AWS** está organizado en **tre
    - [Servidores Web](#servidores-web)  
    - [Base de Datos](#bd)  
    - [Certificación de HTTPS con CertBot](#certbot)  
-4. [Resultado Final](#5-resultado-final)
+4. [Sitio Web](#sitio-web)
 
 
 
@@ -28,8 +28,7 @@ Este CMS de **WordPress** montado a través de **AWS** está organizado en **tre
 Cada máquina se aprovisionará mediante un script **bash**.
 
 ## Balanceador 
-
-```bash
+```sh
 #!/bin/bash
 
 # Instalación de apache2
@@ -75,7 +74,7 @@ sudo hostnamectl set-hostname DanielRodriguez-Bal
 echo "127.0.1.1   DanielRodriguez-Bal" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-Bal."
 
-````
+```
 ***Este script realiza lo siguiente:***
 - Instalación de Apache.
 - Habilitación de módulos necesarios para poder utilizar el balanceador
@@ -84,7 +83,7 @@ echo "Nombre del host cambiado a DanielRodriguez-Bal."
 
 
 ## NFS
-````bash
+```bash
 #!/bin/bash
 
 # Instalación de NFS
@@ -123,7 +122,7 @@ echo "NFS se ha configurado para compartir el directorio /var/www/html."
 sudo hostnamectl set-hostname DanielRodriguez-NFS
 echo "127.0.1.1   DanielRodriguez-NFS" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-NFS."
-````
+```
 ***Este script realiza lo siguiente:***
 - Instalación del servidor NFS.
 - Descarga de WordPress.
@@ -132,8 +131,7 @@ echo "Nombre del host cambiado a DanielRodriguez-NFS."
 - Cambio del nombre del host a DanielRodriguez-NFS
 
 ## Servidores Web
-
-````bash
+```bash
 #!/bin/bash
 
 # Instalación de apache y php5
@@ -177,7 +175,7 @@ echo "Apache configurado para servir WordPress desde /var/www/html."
 sudo hostnamectl set-hostname DanielRodriguez-Web
 echo "127.0.1.1   DanielRodriguez-Web" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-Web."
-````
+```
 ***Este script realiza lo siguiente:***
 - Instalación de los paquetes Apache y NFS Common (NFS Cliente).
 - Montaje del directorio compartido a través de NFS
@@ -186,7 +184,7 @@ echo "Nombre del host cambiado a DanielRodriguez-Web."
 - Cambio del nombre del host a DanielRodriguez-Web
 
 ## BD
-````bash
+```bash
 #!/bin/bash
 
 # Instalación de mariadb-server
@@ -208,7 +206,7 @@ echo "MariaDB permite conexones."
 sudo hostnamectl set-hostname DanielRodriguez-BBDD
 echo "127.0.1.1   DanielRodriguez-BBDD" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-BBDD."
-````
+```
 ***Este script realiza lo siguiente:***
 - Instalación del servidor MariaDB
 - Creación de un Base de Datos y un usuario
@@ -218,9 +216,9 @@ echo "Nombre del host cambiado a DanielRodriguez-BBDD."
 
 ## Certbot
 Se genera el certificado para el dominio **elitescout.ddns.net**
-````bash
+```bash
 sudo certbot --apache -d elitescout.ddns.net --non-interactive --agree-tos --redirect --hsts --uir
-````
+```
 ***Se le dan las siguientes :***
 - **apache:** Modifica los virtual hosts de Apache para HTTPS.
 - **d:** Apunta solo a ese dominio.
@@ -232,28 +230,63 @@ sudo certbot --apache -d elitescout.ddns.net --non-interactive --agree-tos --red
 
 
 # Configuraciones en AWS
+## Instancias
+**Se crearon las siguientes Instancias:**
+- Balanceador
+- WebServer1
+- WebServer2
+- NFS
+- BBDD
 
 ## Red
-
 ### VPC
 ***Se creó:***
-- Una VPC llamada **WordPress-vpc**
+- Una VPC llamada **WordPress-vpc** en la red ```192.168.10.0/24```
      - Dos Subredes **Privadas**:
-       1. Bal-Web-NFS: Realiza la conexión entre el Balanceador y los Servidores Web, y de estos últimos con el NFS)
+       1. Bal-Web-NFS: Realiza la conexión entre el Balanceador y los Servidores Web, y de estos últimos con el NFS.
+          - Subred: ````192.168.10.16/28```` ➡️ ```192.168.10.17``` hasta ```192.168.10.30```
        2. Web-BD: Realiza la conexión entre los Servidores Web y la Base de Datos
+          - Subred: ````192.168.10.32/28```` ➡️ ```192.168.10.33``` hasta ```192.168.10.46```
      - Una Subred **Pública**
-       1. Pública: Da salida a Internet a través del Balanceador 
+       1. Pública: Da salida a Internet a través del Balanceador
+          - Subred: ````192.168.10.0/28```` ➡️ ```192.168.10.1``` hasta ```192.168.10.17```
+### IP's de cada instancia
+- Balanceador
+     1. Interfaz de subred Pública: ```192.168.10.10```
+     2. Interfaz de subred Bal-Web-NFS: ```192.168.10.25```
+- WebServer1
+     1. Interfaz de subred Bal-Web-NFS: ```192.168.10.20```
+     2. Interfaz de subred Web-BD: ```192.168.10.41```
+- WebServer2
+     1. Interfaz de subred Bal-Web-NFS: ```192.168.10.21```
+     2. Interfaz de subred Web-BD: ```192.168.10.42```
+- NFS
+     1. Interfaz de subred Bal-Web-NFS: ```192.168.10.28```
+- BBDD
+     1. Interfaz de subred Web-BD: ```192.168.10.45```
+
+
+
 ## Seguridad
 
 ### Listas de Control de Acceso (ACL)
 Se Configuró una ACL asignada a la capa 3 (BD) para que solo pudiera recibir conexion directa de la capa 2.
 
 ### Grupos de Seguridad (GS)
-Se han creado cuatro grupos de seguridad, uno para cada tipo de instancia:
+Se han creado cuatro grupos de seguridad, uno para cada tipo de instancia, cada una de ellas permite **(Protocolo:Puerto)**:
 - GS-Balanceador
+  1. ```HTTP:80``` (Para poder actualizar los certificados)
+  2. ```HTTPS:443``` (Para las peticiones web)
+  3. ```SSH:22``` (Para la conexión remota)
 - GS-WebServer
+  1. ```HTTP:80``` (Para recibir las peticiones web desde el balanceador | Permitido solo desde GS-Balanceador)
+  2. ```SSH:22``` (Para la conexión remota)
 - GS-NFS
+  1. ```NFS:2049``` (Para poder servir NFS a los servidores web | Permitido solo desde GS-WebServer)
+  2. ```SSH:22``` (Para la conexión remota)
 - GS-BBDD
+  1. ```MYSQL:3306``` (Para poder suministrar datos a los servidores web | Permitido solo desde GS-WebServer)
+  2. ```SSH:22``` (Para la conexión remota)
 
-
-
+# Sitio Web
+El dominio elegido para el sitio web es [elitescout.ddns.net](https://elitescout.ddns.net/)
