@@ -1,17 +1,16 @@
-Este CMS de **WordPress** montado a tráves de **AWS** está organizado en **tres capas**: pública, privada (aplicación + NFS) y privada (base de datos).
+Este CMS de **WordPress** montado a través de **AWS** está organizado en **tres capas**: pública, privada (aplicación + NFS) y privada (base de datos).
 
 ---
 
-# INDICE 
+# ÍNDICE 
 1. [Arquitectura de la Infraestructura](#arquitectura)
-2. [Seguridad](#conectividad) 
+2. [Conectividad](#conectividad) 
 3. [Scripts de Aprovisionamiento](#aprovisionamiento)  
-   - [Capa 1 – Balanceador ](#balanceador)  
-   - [Capa 2 – Servidor NFS](#nfs)  
-   - [Capa 2 – Servidores Web Apache](#servidores-web)  
-   - [Capa 3 – Base de Datos](#bbdd)  
-   - [Instalación de WordPress](#45-instalación-de-wordpress)  
-   - [HTTPS con CertBot (Opcional)](#46-https-con-certbot-opcional)  
+   - [Balanceador](#balanceador)  
+   - [Servidor NFS](#nfs)  
+   - [Servidores Web](#servidores-web)  
+   - [Base de Datos](#bd)  
+   - [Certificación de HTTPS con CertBot](#certbot)  
 4. [Resultado Final](#5-resultado-final)
 
 
@@ -26,7 +25,6 @@ Este CMS de **WordPress** montado a tráves de **AWS** está organizado en **tre
 - Solo hay acceso a la **capa 3** desde la **capa 1**.
 
 ## Aprovisionamiento
-
 Cada máquina se aprovisionará mediante un script **bash**.
 
 ## Balanceador 
@@ -57,7 +55,6 @@ cat <<EOF > wordpress-balancer.conf
         BalancerMember http://192.168.10.21:80
         ProxySet lbmethod=byrequests
     </Proxy>
-
     ProxyPass "/" "balancer://webcluster/"
     ProxyPassReverse "/" "balancer://webcluster/"
 
@@ -74,15 +71,14 @@ sudo a2dissite 000-default.conf
 sudo systemctl reload apache2
 echo "Balanceador de carga configurado y activo."
 
-
 sudo hostnamectl set-hostname DanielRodriguez-Bal
 echo "127.0.1.1   DanielRodriguez-Bal" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-Bal."
 
 ````
-**Este script realiza lo siguiente:**
+***Este script realiza lo siguiente:***
 - Instalación de Apache.
-- Habilitación de modulos necesarios para poder utilizar el balanceador
+- Habilitación de módulos necesarios para poder utilizar el balanceador
 - Configuración de un sitio HTTP (Para posterior configuración HTTPS con certificado)
 - Cambio del nombre del host a DanielRodriguez-Bal
 
@@ -110,7 +106,6 @@ echo "WordPress se ha descargado y descomprimido en /var/www/html."
 
 # volver al directorio principal
 cd ~
-
 # Configurar permisos para WordPress
 sudo chown -R www-data:www-data /var/www/html
 sudo find /var/www/html -type d -exec chmod 775 {} +
@@ -129,7 +124,7 @@ sudo hostnamectl set-hostname DanielRodriguez-NFS
 echo "127.0.1.1   DanielRodriguez-NFS" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-NFS."
 ````
-**Este script realiza lo siguiente:**
+***Este script realiza lo siguiente:***
 - Instalación del servidor NFS.
 - Descarga de WordPress.
 - Asignación de permisos a los archivos de WordPress
@@ -183,14 +178,14 @@ sudo hostnamectl set-hostname DanielRodriguez-Web
 echo "127.0.1.1   DanielRodriguez-Web" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-Web."
 ````
-**Este script realiza lo siguiente:**
-- Instalación de los paquetes Apache y NFS common (NFS Cliente).
+***Este script realiza lo siguiente:***
+- Instalación de los paquetes Apache y NFS Common (NFS Cliente).
 - Montaje del directorio compartido a través de NFS
-- Adecucación de permisos del directorio compartido
+- Adecuación de permisos del directorio compartido
 - Configuración de un sitio HTTP
 - Cambio del nombre del host a DanielRodriguez-Web
 
-## BBDD
+## BD
 ````bash
 #!/bin/bash
 
@@ -206,7 +201,7 @@ GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'%';
 FLUSH PRIVILEGES;
 MYSQL_SCRIPT
 
-c" /etc/mysql/mariadb.conf.d/50-server.cnf
+sed -i "s/^bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
 sudo systemctl restart mariadb
 echo "MariaDB permite conexones."
 
@@ -214,9 +209,51 @@ sudo hostnamectl set-hostname DanielRodriguez-BBDD
 echo "127.0.1.1   DanielRodriguez-BBDD" | sudo tee -a /etc/hosts
 echo "Nombre del host cambiado a DanielRodriguez-BBDD."
 ````
-**Este script realiza lo siguiente:**
+***Este script realiza lo siguiente:***
 - Instalación del servidor MariaDB
 - Creación de un Base de Datos y un usuario
 - Asignación de permisos al usuario sobre la Base de Datos
-- Cambio de
+- Permisos a conexiones remotas
 - Cambio del nombre del host a DanielRodriguez-BBDD
+
+## Certbot
+Se genera el certificado para el dominio **elitescout.ddns.net**
+````bash
+sudo certbot --apache -d elitescout.ddns.net --non-interactive --agree-tos --redirect --hsts --uir
+````
+***Se le dan las siguientes :***
+- **apache:** Modifica los virtual hosts de Apache para HTTPS.
+- **d:** Apunta solo a ese dominio.
+- **non-interactive:** Se ejecuta sin pedir confirmación.
+- **agree-tos:** Acepta automáticamente los términos y condicioens de Let's Encrypt.
+- **redirect:** Redirige todas las peticiones a *HTTP* hacia *HTTPS*
+- **hsts:** Obliga a los navegadores a utilizar HTTPS.
+- **uir:** Obliga al navegador a actualizar cualquier recurso que pudiera abrirse en *HTTP* a *HTTPS*
+
+
+# Configuraciones en AWS
+
+## Red
+
+### VPC
+***Se creó:***
+- Una VPC llamada **WordPress-vpc**
+     - Dos Subredes **Privadas**:
+       1. Bal-Web-NFS: Realiza la conexión entre el Balanceador y los Servidores Web, y de estos últimos con el NFS)
+       2. Web-BD: Realiza la conexión entre los Servidores Web y la Base de Datos
+     - Una Subred **Pública**
+       1. Pública: Da salida a Internet a través del Balanceador 
+## Seguridad
+
+### Listas de Control de Acceso (ACL)
+Se Configuró una ACL asignada a la capa 3 (BD) para que solo pudiera recibir conexion directa de la capa 2.
+
+### Grupos de Seguridad (GS)
+Se han creado cuatro grupos de seguridad, uno para cada tipo de instancia:
+- GS-Balanceador
+- GS-WebServer
+- GS-NFS
+- GS-BBDD
+
+
+
