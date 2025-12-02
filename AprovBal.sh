@@ -9,17 +9,18 @@ echo "Repositorios actualizados."
 sudo a2enmod proxy
 sudo a2enmod proxy_balancer
 sudo a2enmod proxy_http
-sudo a2enmod lbmethod_byrequests
+
 echo "Módulos de balanceo de carga habilitados."
 
 #Configuración del balanceador de carga
+sudo a2enmod ssl
 cd /etc/apache2/sites-available/
 cp 000-default.conf wordpress-balancer.conf
 cat <<EOF > wordpress-balancer.conf
 <VirtualHost *:80>
     <Proxy "balancer://webcluster">
+        BalancerMember http://192.168.10.20:80
         BalancerMember http://192.168.10.21:80
-        BalancerMember http://192.168.10.22:80
         ProxySet lbmethod=byrequests
     </Proxy>
 
@@ -39,6 +40,7 @@ sudo a2dissite 000-default.conf
 sudo systemctl reload apache2
 echo "Balanceador de carga configurado y activo."
 
-sudo hostnamectl set-hostname DanielRodriguez-Bal
-echo "Nombre del host cambiado a DanielRodriguez-Bal."
 
+sudo hostnamectl set-hostname DanielRodriguez-Bal
+echo "127.0.1.1   DanielRodriguez-Bal" | sudo tee -a /etc/hosts
+echo "Nombre del host cambiado a DanielRodriguez-Bal."
