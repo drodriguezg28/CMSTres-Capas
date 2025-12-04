@@ -279,14 +279,14 @@ Se han creado cuatro grupos de seguridad, uno para cada tipo de instancia, cada 
   2. ```HTTPS:443``` (Para las peticiones web)
   3. ```SSH:22``` (Para la conexión remota)
 - GS-WebServer
-  1. ```HTTP:80``` (Para recibir las peticiones web desde el balanceador | Permitido solo desde GS-Balanceador)
-  2. ```SSH:22``` (Para la conexión remota)
+  1. ```HTTP:80``` (Para recibir las peticiones web desde el balanceador | Permitido solo desde **GS-Balanceador**)
+  2. ```SSH:22``` (Para la conexión remota | Permitido solo desde **GS-Balanceador**)
 - GS-NFS
-  1. ```NFS:2049``` (Para poder servir NFS a los servidores web | Permitido solo desde GS-WebServer)
-  2. ```SSH:22``` (Para la conexión remota)
+  1. ```NFS:2049``` (Para poder servir NFS a los servidores web | Permitido solo desde **GS-WebServer**)
+  2. ```SSH:22``` (Para la conexión remota | Permitido solo desde **GS-WebServer**)
 - GS-BBDD
-  1. ```MYSQL:3306``` (Para poder suministrar datos a los servidores web | Permitido solo desde GS-WebServer)
-  2. ```SSH:22``` (Para la conexión remota)
+  1. ```MYSQL:3306``` (Para poder suministrar datos a los servidores web | Permitido solo desde **GS-WebServer**)
+  2. ```SSH:22``` (Para la conexión remota | Permitido solo desde **GS-WebServer**)
 
 # Sitio Web
 El dominio elegido para el sitio web es [elitescout.ddns.net](https://elitescout.ddns.net/)
