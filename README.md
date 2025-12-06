@@ -219,11 +219,11 @@ Se genera el certificado para el dominio **elitescout.ddns.net**
 ```bash
 sudo certbot --apache -d elitescout.ddns.net --non-interactive --agree-tos --redirect --hsts --uir
 ```
-***Se le dan las siguientes :***
+***Se le dan las siguientes:***
 - **apache:** Modifica los virtual hosts de Apache para HTTPS.
 - **d:** Apunta solo a ese dominio.
 - **non-interactive:** Se ejecuta sin pedir confirmación.
-- **agree-tos:** Acepta automáticamente los términos y condicioens de Let's Encrypt.
+- **agree-tos:** Acepta automáticamente los términos y condiciones de Let's Encrypt.
 - **redirect:** Redirige todas las peticiones a *HTTP* hacia *HTTPS*
 - **hsts:** Obliga a los navegadores a utilizar HTTPS.
 - **uir:** Obliga al navegador a actualizar cualquier recurso que pudiera abrirse en *HTTP* a *HTTPS*
@@ -270,7 +270,7 @@ sudo certbot --apache -d elitescout.ddns.net --non-interactive --agree-tos --red
 ## Seguridad
 
 ### Listas de Control de Acceso (ACL)
-Se Configuró una ACL asignada a la capa 3 (BD) para que solo pudiera recibir conexion directa de la capa 2.
+Se Configuró una ACL asignada a la capa 3 (BD) para que solo pudiera recibir conexión directa de la capa 2.
 
 ### Grupos de Seguridad (GS)
 Se han creado cuatro grupos de seguridad, uno para cada tipo de instancia, cada una de ellas permite **(Protocolo:Puerto)**:
